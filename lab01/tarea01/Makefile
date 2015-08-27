@@ -5,3 +5,6 @@ all: $(CONTIKI_PROJECT)
 
 CONTIKI = ../../../..
 include $(CONTIKI)/Makefile.include
+
+clean:
+	rm -r symbols.* obj_* $(CONTIKI_PROJECT).native contiki-* *.target *.sky
