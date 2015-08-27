@@ -20,7 +20,6 @@ PROCESS_THREAD(t1_cant_btn_process, ev, data)
 
 	// Start threads
 	process_start(&int_print_process, (void*)NULL);
-	process_start(&t1_led_toggle_process, (void*)NULL);
 	
 	static int btn_press_count = 0;
 	while(1){
