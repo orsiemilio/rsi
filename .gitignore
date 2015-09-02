@@ -1,0 +1,9 @@
+# ignore build files
+contiki-*
+contiki-*
+Makefile.*
+*.native
+*.target
+*.sky
+obj_*
+symbols.*
