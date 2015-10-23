@@ -168,9 +168,9 @@ PROCESS_THREAD(t1_cant_btn_process, ev, data)
 	while(1){
     		PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
 		btn_press_count++;
-		unsigned long frec = TIMER_INTERVAL / (btn_press_count + 1);
+		unsigned long frec = TIMER_INTERVAL / (btn_press_count * 4 );
 		ctimer_set(&timer, frec, (void*)timer_cb, NULL);
-		printf("Button press count: %i. Temperature measuring freciency: %i ms \n", btn_press_count, 1000 / ( btn_press_count + 1) );
+		printf("Button press count: %i. Temperature measuring freciency: %li tics \n", btn_press_count, frec);
 	}
 
 	PROCESS_END();

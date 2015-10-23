@@ -38,34 +38,29 @@
 #include "net/uip-ds6.h"
 #include "net/uip-debug.h"
 
-// access to node_id
-#include "sys/node-id.h"
-// button
-#include "dev/button-sensor.h"
+#include "dev/leds.h"
 
 #include "simple-udp.h"
 #include "servreg-hack.h"
 
-#include <stdio.h>
-#include <string.h>
+#include "net/rpl/rpl.h"
 
 #include "sensor.h"
-#include "dev/sht11-sensor.h"
+
+#include <stdio.h>
+#include <string.h>
 
 #define UDP_PORT 1234
 #define SERVICE_ID 190
 
-#define SEND_INTERVAL		(60 * CLOCK_SECOND)
+#define SEND_INTERVAL		(10 * CLOCK_SECOND)
 #define SEND_TIME		(random_rand() % (SEND_INTERVAL))
-
-// one second
-#define TIMER_INTERVAL		(CLOCK_CONF_SECOND)
 
 static struct simple_udp_connection unicast_connection;
 
 /*---------------------------------------------------------------------------*/
-//PROCESS(unicast_sender_process, "Unicast sender example process");
-//AUTOSTART_PROCESSES(&unicast_sender_process);
+PROCESS(unicast_receiver_process, "Unicast receiver example process");
+AUTOSTART_PROCESSES(&unicast_receiver_process);
 /*---------------------------------------------------------------------------*/
 	static void
 receiver(struct simple_udp_connection *c,
@@ -76,14 +71,27 @@ receiver(struct simple_udp_connection *c,
 		const uint8_t *data,
 		uint16_t datalen)
 {
-	printf("Data received on port %d from port %d with length %d\n",
-			receiver_port, sender_port, datalen);
+
+	pkg_t mssg;
+	// get pkg
+	memcpy( &mssg, data, sizeof(pkg_t));
+
+	// get temp
+	sensor_t temp = mssg.temp;
+	// get sender node id
+	unsigned char sender_nodeId = mssg.sender_node_id;
+	// get mssg num
+	unsigned char mssg_num = mssg.mssg_number;
+
+	printf("Datos recibidos:\n Medida: %d %c%c. stamp: %d.\n sender_id: %i. Mssg numer: %i.\n", 
+		temp.valor, temp.unidades[0],temp.unidades[1], temp.time_stamp, sender_nodeId, mssg_num);
+	leds_toggle(LEDS_GREEN);
 }
 /*---------------------------------------------------------------------------*/
-	static void
+	static uip_ipaddr_t *
 set_global_address(void)
 {
-	uip_ipaddr_t ipaddr;
+	static uip_ipaddr_t ipaddr;
 	int i;
 	uint8_t state;
 
@@ -100,78 +108,50 @@ set_global_address(void)
 			printf("\n");
 		}
 	}
+
+	return &ipaddr;
 }
 /*---------------------------------------------------------------------------*/
-
-static sensor_t leer_temp(){
-	uint16_t val;
-	sensor_t temp;
-
-	// activo el sensor
-	SENSORS_ACTIVATE(sht11_sensor); 
-	// sht11_sensor.value(SHT11_SENSOR_TEMP); devuelve algo proporcional a la temperatura, pero no la temperatura
-	// hay que masticarla
-	val = ((0.01*sht11_sensor.value(SHT11_SENSOR_TEMP))-39.6); // T to oC (grados celcius)
-	// desactivo el sensor para ahorrar energia
-	SENSORS_DEACTIVATE(sht11_sensor); 
-	temp.valor = val;
-	temp.unidades[0] = 'o';
-	temp.unidades[1] = 'C';
-	temp.time_stamp = clock_seconds();
-	return temp;
-}
-
-static struct ctimer timer;
-void timer_cb(){
-	uip_ipaddr_t addr;
-	uip_ip6addr(&addr, 0xaaaa,0,0,0,0x212, 0x7401,0x01,0x101);
-
-	static unsigned int message_number = 1;
-
-	char buf[sizeof(pkg_t)];
-
-	pkg_t pkg_to_send;
-
-	pkg_to_send.temp = leer_temp();
-
-	pkg_to_send.sender_node_id = (unsigned char) node_id;
-	pkg_to_send.mssg_number = (unsigned char) message_number;
-
-	// copy message to buffer
-	memcpy(buf, &pkg_to_send, sizeof(pkg_t) );
-
-	printf("Sending unicast to ");
-	uip_debug_ipaddr_print(&addr);
-	printf("\n");
-	//sprintf(buf, "Message %d", message_number);
-	simple_udp_sendto(&unicast_connection, buf, sizeof(buf), &addr);
-	message_number++;
-	ctimer_restart(&timer);
-}
-/*------------------- BUTTON THREAD -----------------------------------------*/
-PROCESS(t1_cant_btn_process, "Button press count process");
-AUTOSTART_PROCESSES(&t1_cant_btn_process);
-PROCESS_THREAD(t1_cant_btn_process, ev, data)
+	static void
+create_rpl_dag(uip_ipaddr_t *ipaddr)
 {
-  PROCESS_BEGIN();
-  SENSORS_ACTIVATE(button_sensor);
+	struct uip_ds6_addr *root_if;
 
-	set_global_address();
+	root_if = uip_ds6_addr_lookup(ipaddr);
+	if(root_if != NULL) {
+		rpl_dag_t *dag;
+		uip_ipaddr_t prefix;
+
+		rpl_set_root(RPL_DEFAULT_INSTANCE, ipaddr);
+		dag = rpl_get_any_dag();
+		uip_ip6addr(&prefix, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
+		rpl_set_prefix(dag, &prefix, 64);
+		PRINTF("created a new RPL dag\n");
+	} else {
+		PRINTF("failed to create a new RPL DAG\n");
+	}
+}
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(unicast_receiver_process, ev, data)
+{
+	uip_ipaddr_t *ipaddr;
+
+	PROCESS_BEGIN();
+
+	//  servreg_hack_init();
+
+	ipaddr = set_global_address();
+
+	create_rpl_dag(ipaddr);
+
+	//servreg_hack_register(SERVICE_ID, ipaddr);
 
 	simple_udp_register(&unicast_connection, UDP_PORT,
 			NULL, UDP_PORT, receiver);
-        printf("Tarea 01 - Button press counter\n");
-        printf("Sending frecuency: 1000 ms\n");
-	ctimer_set(&timer, TIMER_INTERVAL , (void*)timer_cb, NULL);
 
-	static int btn_press_count = 0;
-	while(1){
-    		PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
-		btn_press_count++;
-		unsigned long frec = TIMER_INTERVAL / (btn_press_count + 1);
-		ctimer_set(&timer, frec, (void*)timer_cb, NULL);
-		printf("Button press count: %i. Temperature measuring freciency: %i ms \n", btn_press_count, 1000 / ( btn_press_count + 1) );
+	while(1) {
+		PROCESS_WAIT_EVENT();
 	}
-
 	PROCESS_END();
 }
+/*---------------------------------------------------------------------------*/

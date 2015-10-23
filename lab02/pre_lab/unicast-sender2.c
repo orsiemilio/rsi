@@ -59,13 +59,13 @@
 #define SEND_TIME		(random_rand() % (SEND_INTERVAL))
 
 // one second
-#define TIMER_INTERVAL		(CLOCK_CONF_SECOND)
+#define TIMER_INTERVAL		(1000 * CLOCK_CONF_SECOND)
 
 static struct simple_udp_connection unicast_connection;
 
 /*---------------------------------------------------------------------------*/
-//PROCESS(unicast_sender_process, "Unicast sender example process");
-//AUTOSTART_PROCESSES(&unicast_sender_process);
+PROCESS(unicast_sender_process, "Unicast sender example process");
+AUTOSTART_PROCESSES(&unicast_sender_process);
 /*---------------------------------------------------------------------------*/
 	static void
 receiver(struct simple_udp_connection *c,
@@ -121,56 +121,81 @@ static sensor_t leer_temp(){
 	return temp;
 }
 
-static struct ctimer timer;
-void timer_cb(){
-	uip_ipaddr_t addr;
-	uip_ip6addr(&addr, 0xaaaa,0,0,0,0x212, 0x7401,0x01,0x101);
-
-	static unsigned int message_number = 1;
-
-	char buf[sizeof(pkg_t)];
-
-	pkg_t pkg_to_send;
-
-	pkg_to_send.temp = leer_temp();
-
-	pkg_to_send.sender_node_id = (unsigned char) node_id;
-	pkg_to_send.mssg_number = (unsigned char) message_number;
-
-	// copy message to buffer
-	memcpy(buf, &pkg_to_send, sizeof(pkg_t) );
-
-	printf("Sending unicast to ");
-	uip_debug_ipaddr_print(&addr);
-	printf("\n");
-	//sprintf(buf, "Message %d", message_number);
-	simple_udp_sendto(&unicast_connection, buf, sizeof(buf), &addr);
-	message_number++;
-	ctimer_restart(&timer);
-}
-/*------------------- BUTTON THREAD -----------------------------------------*/
+struct etimer periodic_timer;
 PROCESS(t1_cant_btn_process, "Button press count process");
-AUTOSTART_PROCESSES(&t1_cant_btn_process);
-PROCESS_THREAD(t1_cant_btn_process, ev, data)
+PROCESS_THREAD(unicast_sender_process, ev, data)
 {
-  PROCESS_BEGIN();
-  SENSORS_ACTIVATE(button_sensor);
+	static struct etimer send_timer;
+	uip_ipaddr_t addr;
+
+	PROCESS_BEGIN();
+
+	process_start(&t1_cant_btn_process, (void*)NULL);
+	//servreg_hack_init();
 
 	set_global_address();
 
 	simple_udp_register(&unicast_connection, UDP_PORT,
 			NULL, UDP_PORT, receiver);
+
+	etimer_set(&periodic_timer, 60*CLOCK_SECOND / 2);
+	while(1) {
+
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+		etimer_reset(&periodic_timer);
+		etimer_set(&send_timer, SEND_TIME);
+
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
+		//addr = servreg_hack_lookup(SERVICE_ID);
+		uip_ip6addr(&addr, 0xaaaa,0,0,0,0x212, 0x7401,0x01,0x101);
+
+		// useless since addr is hardcoded
+		//if(&addr != NULL) {
+
+		static unsigned int message_number = 0;
+
+		char buf[sizeof(pkg_t)];
+
+		pkg_t pkg_to_send;
+
+		pkg_to_send.temp = leer_temp();
+
+		pkg_to_send.sender_node_id = (unsigned char) node_id;
+		pkg_to_send.mssg_number = (unsigned char) message_number;
+
+		// copy message to buffer
+		memcpy(buf, &pkg_to_send, sizeof(pkg_t) );
+
+		printf("Sending unicast to ");
+		uip_debug_ipaddr_print(&addr);
+		printf("\n");
+		//sprintf(buf, "Message %d", message_number);
+		simple_udp_sendto(&unicast_connection, buf, sizeof(buf), &addr);
+		message_number++;
+
+		//} else {
+		//	printf("Service %d not found\n", SERVICE_ID);
+		//}
+	}
+
+	PROCESS_END();
+}
+/*------------------- BUTTON THREAD -----------------------------------------*/
+PROCESS_THREAD(t1_cant_btn_process, ev, data)
+{
+  PROCESS_BEGIN();
+  SENSORS_ACTIVATE(button_sensor);
+
         printf("Tarea 01 - Button press counter\n");
-        printf("Sending frecuency: 1000 ms\n");
-	ctimer_set(&timer, TIMER_INTERVAL , (void*)timer_cb, NULL);
 
 	static int btn_press_count = 0;
 	while(1){
     		PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
 		btn_press_count++;
-		unsigned long frec = TIMER_INTERVAL / (btn_press_count + 1);
-		ctimer_set(&timer, frec, (void*)timer_cb, NULL);
-		printf("Button press count: %i. Temperature measuring freciency: %i ms \n", btn_press_count, 1000 / ( btn_press_count + 1) );
+		int frec = TIMER_INTERVAL ; 
+		//etimer_set( &periodic_timer, TIMER_INTERVAL );
+		//etimer_restart( &periodic_timer);
+		printf("Button press count: %i. Temperature measuring freciency: %i ms \n", btn_press_count, frec);
 	}
 
 	PROCESS_END();
