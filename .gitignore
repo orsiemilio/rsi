@@ -7,3 +7,5 @@ Makefile.*
 *.sky
 obj_*
 symbols.*
+*.swp
+

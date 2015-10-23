@@ -94,8 +94,8 @@
       <breakpoints />
       <interface_config>
         se.sics.cooja.interfaces.Position
-        <x>-0.30009980400778036</x>
-        <y>0.09584151332479962</y>
+        <x>-1.2334775020710722</x>
+        <y>2.3030454662417528</y>
         <z>0.0</z>
       </interface_config>
       <interface_config>
@@ -220,10 +220,10 @@
   <plugin>
     se.sics.cooja.plugins.SimControl
     <width>280</width>
-    <z>3</z>
+    <z>0</z>
     <height>160</height>
-    <location_x>400</location_x>
-    <location_y>0</location_y>
+    <location_x>7</location_x>
+    <location_y>317</location_y>
   </plugin>
   <plugin>
     se.sics.cooja.plugins.Visualizer
@@ -232,26 +232,13 @@
       <skin>se.sics.cooja.plugins.skins.IDVisualizerSkin</skin>
       <skin>se.sics.cooja.plugins.skins.UDGMVisualizerSkin</skin>
       <skin>se.sics.cooja.plugins.skins.TrafficVisualizerSkin</skin>
-      <viewport>1.3111336585433733 0.0 0.0 1.3111336585433733 194.6172538700214 44.98039957205472</viewport>
+      <viewport>1.0926113821194778 0.0 0.0 1.0926113821194778 132.68104489168448 15.816999643378928</viewport>
     </plugin_config>
-    <width>400</width>
-    <z>4</z>
-    <height>419</height>
+    <width>294</width>
+    <z>5</z>
+    <height>311</height>
     <location_x>1</location_x>
     <location_y>1</location_y>
-  </plugin>
-  <plugin>
-    se.sics.cooja.plugins.LogListener
-    <plugin_config>
-      <filter />
-      <formatted_time />
-      <coloring />
-    </plugin_config>
-    <width>1200</width>
-    <z>1</z>
-    <height>240</height>
-    <location_x>400</location_x>
-    <location_y>160</location_y>
   </plugin>
   <plugin>
     se.sics.cooja.plugins.TimeLine
@@ -271,45 +258,60 @@
       <zoomfactor>500.0</zoomfactor>
     </plugin_config>
     <width>1600</width>
-    <z>2</z>
+    <z>3</z>
     <height>246</height>
     <location_x>0</location_x>
     <location_y>554</location_y>
   </plugin>
   <plugin>
-    se.sics.cooja.plugins.Notes
+    se.sics.cooja.plugins.RadioLogger
     <plugin_config>
-      <notes>Enter notes here</notes>
-      <decorations>true</decorations>
+      <split>157</split>
+      <formatted_time />
+      <showdups>false</showdups>
+      <hidenodests>false</hidenodests>
+      <analyzers name="6lowpan" />
     </plugin_config>
-    <width>920</width>
-    <z>6</z>
-    <height>160</height>
-    <location_x>680</location_x>
-    <location_y>0</location_y>
+    <width>587</width>
+    <z>2</z>
+    <height>461</height>
+    <location_x>1012</location_x>
+    <location_y>3</location_y>
   </plugin>
   <plugin>
     SerialSocketServer
     <mote_arg>0</mote_arg>
     <width>422</width>
-    <z>5</z>
-    <height>99</height>
-    <location_x>392</location_x>
-    <location_y>442</location_y>
+    <z>6</z>
+    <height>69</height>
+    <location_x>4</location_x>
+    <location_y>483</location_y>
   </plugin>
   <plugin>
-    se.sics.cooja.plugins.RadioLogger
+    se.sics.cooja.plugins.LogListener
     <plugin_config>
-      <split>330</split>
+      <filter />
       <formatted_time />
-      <showdups>false</showdups>
-      <hidenodests>false</hidenodests>
+      <coloring />
     </plugin_config>
-    <width>1185</width>
-    <z>0</z>
-    <height>527</height>
-    <location_x>316</location_x>
-    <location_y>169</location_y>
+    <width>712</width>
+    <z>1</z>
+    <height>403</height>
+    <location_x>301</location_x>
+    <location_y>-2</location_y>
+  </plugin>
+  <plugin>
+    se.sics.cooja.plugins.MoteInterfaceViewer
+    <mote_arg>2</mote_arg>
+    <plugin_config>
+      <interface>IP Address</interface>
+      <scrollpos>0,0</scrollpos>
+    </plugin_config>
+    <width>350</width>
+    <z>4</z>
+    <height>300</height>
+    <location_x>180</location_x>
+    <location_y>180</location_y>
   </plugin>
 </simconf>
 

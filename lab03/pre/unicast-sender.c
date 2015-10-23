@@ -121,11 +121,12 @@ PROCESS_THREAD(unicast_sender_process, ev, data)
 		uip_ip6addr(&addr, 0xaaaa,0,0,0,0x212, 0x7402,0x02,0x202);
     //if(addr != NULL) {
       static unsigned int message_number;
-      char buf[20];
+      char buf[104];
 			printf("LPM: %ld, CPU ON: %ld, RX: %ld, TX: %ld, IRQ: %ld \n",energest_type_time(ENERGEST_TYPE_LPM)/RTIMER_SECOND,energest_type_time(ENERGEST_TYPE_CPU)/RTIMER_SECOND,energest_type_time(ENERGEST_TYPE_LISTEN)/RTIMER_SECOND,energest_type_time(ENERGEST_TYPE_TRANSMIT)/RTIMER_SECOND,energest_type_time(ENERGEST_TYPE_IRQ)/RTIMER_SECOND);
       printf("Sending unicast to ");
       uip_debug_ipaddr_print(&addr);
       printf("\n");
+      //sprintf(buf, "Message %d eeeeeeeeee1eeeeeeeeee2eeeeeeeeee3eeeeeeeeee4eeeeeeeeee5eeeeeeeeee6eeeeeeeeee7eeeeeeeeee8eeeeeeeeee9", message_number);
       sprintf(buf, "Message %d", message_number);
       message_number++;
       simple_udp_sendto(&unicast_connection, buf, strlen(buf) + 1, &addr);
